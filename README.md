@@ -12,3 +12,21 @@ The core can be instantiated and used like any other Xililx AXI4 IP.  Using the 
 
 ![image](https://user-images.githubusercontent.com/64434702/146989392-0e6dac22-6615-4c7d-a180-af2f8fb69ffc.png)
 
+## Interfacing the Peripheral from Software
+
+The peripheral contains four 32b registers using the first four offsets from the base address.
+|  Address  |Register| Purpose               |
+|-----------|--------|-----------------------|
+|base + 0x0 |DATA    | SPI RX/TX Data Reg    |
+|base + 0x4 |S       | SPI Status Reg        |
+|base + 0x8 |C       | SPI Configuration Reg |
+|base + 0xC |GPIO    | GPIO Output Data      |
+
+### DATA Register 
+The data register is the buffer for the double-buffered receive and transmit. Reads from the data register will return the most recent received data from the slave in DATA[7:0]; DATA[31:8] will always read 0.  Writes to DATA[7:0] will buffer the next octet to be transmitted when the SPI link becomes available.  The SPI status register has flags to indicate when the RX buffer is not empty and the TX buffer is empty.
+
+| |`31.............................8`|`7......0`|
+|-|----------------------------------|----------|
+|R|`00000000000000000000000000000000`|`RxData  `|
+|W|`00000000000000000000000000000000`|`TXData  `|
+
