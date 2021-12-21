@@ -30,3 +30,16 @@ The data register is the buffer for the double-buffered receive and transmit. Re
 |R|`00000000000000000000000000000000`|`RxData  `|
 |W|`00000000000000000000000000000000`|`TXData  `|
 
+### Status (S) Register 
+The read-only status register contains two flags: SPTEF and SPRE.  Writes have no effect.
+
+SPTE
+: SPI Transmit buffer Empty (STBE) flag is 1 whenever the TX buffer is available to be written.  When the SPI is idle, two consecutive writes to the DATA register can be made before STBE goes low (due to double-buffering).  Before transmitting, SPTEF should be polled to indicate the byte can be sent.
+
+SRBF
+: SPI Receive Buffer Full (SRBF) flag becomes 1 whenever a new value from the slave is ready to be read from the DATA register.  A read of the S register followed by a read of the DATA register clears SRBF.  There is no protection against overrun.
+
+
+| |`31...................................2`|'1'|`0`|
+|-|----------------------------------------|---|---|
+|R|`00000000000000000000000000000000000000`|SPTE|SPRF|
