@@ -40,6 +40,6 @@ SRBF
 : SPI Receive Buffer Full (SRBF) flag becomes 1 whenever a new value from the slave is ready to be read from the DATA register.  A read of the S register followed by a read of the DATA register clears SRBF.  There is no protection against overrun.
 
 
-| |`31...................................2`|'1'|`0`|
-|-|----------------------------------------|---|---|
+| |`31...................................2`|`1` |`0` |
+|-|----------------------------------------|----|----|
 |R|`00000000000000000000000000000000000000`|SPTE|SPRF|
