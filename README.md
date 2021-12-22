@@ -36,13 +36,15 @@ The read-only status register contains two flags: SPTEF and SPRE.  Writes have n
 SPTE
 : SPI Transmit buffer Empty (STBE) flag is 1 whenever the TX buffer is available to be written.  When the SPI is idle, two consecutive writes to the DATA register can be made before STBE goes low (due to double-buffering).  Before transmitting, SPTEF should be polled to indicate the byte can be sent.
 
-SRBF
+SPRF
 : SPI Receive Buffer Full (SRBF) flag becomes 1 whenever a new value from the slave is ready to be read from the DATA register.  A read of the S register followed by a read of the DATA register clears SRBF.  There is no protection against overrun.
 
+BUSY
+: SPI busy flag.  When 0, the SPI module has completed all previous transmissions and is idle.  When 1, a serial transmission is in progress.
 
-| |`31...................................2`|`1` |`0` |
-|-|----------------------------------------|----|----|
-|R|`00000000000000000000000000000000000000`|SPTE|SPRF|
+| |`31...................................3`|`2` |`1` |`0` |
+|-|----------------------------------------|----|----|----|
+|R|`00000000000000000000000000000000000000`|BUSY|SPRF|SPTE|
 
 ### SPI Configuration Register (C)
 The C register configures the SPI communication settings.  
@@ -66,5 +68,15 @@ LOOPE
 ### GPIO Output Register 
 
 This register contains the values driven on the (optional) GP output port.  Only the least significant 'w' bits are used, where 'w' is the configured width of the port.
+
+## Installation
+Create a local copy of the directory tree axi_spi_simple_1.0/ to your local hard drive.  Add the IP path to your Vivado project and instantiate the IP in the standard way.
+
+## Using the IP Core
+
+The following C code example demonstrates how one cn interface the IP core from software.  It does not access the I/O registers through the Xilinx API but accesses them directly using the known memory-mapped I/O address.  The code may need to be tailored for the specific development environment.  
+
+...
+...
 
 
