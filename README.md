@@ -76,7 +76,7 @@ Create a local copy of the directory tree axi_spi_simple_1.0/ to your local hard
 
 The following C code example demonstrates how one cn interface the IP core from software.  It does not access the I/O registers through the Xilinx API but accesses them directly using the known memory-mapped I/O address.  The code may need to be tailored for the specific development environment.  
 
-...
+```
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -136,6 +136,6 @@ int main ()
    return 0;
 }
 
-...
+```
 
 
