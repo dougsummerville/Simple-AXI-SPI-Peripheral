@@ -56,8 +56,15 @@ CPOL,CPHA
 LSBF
 : Least significant bit first enable.  When 1, bytes are transmitted lsb-first; otherwise, msb-first but ordering is used.
 
+LOOPE
+: Enable loopback mode.  For testing.  MISO input is bypassed and the MOSI output is fed back into the RX input.
+
 |   |`31..........20`|`19` |`18` |`17` |`16` |`15..............0`|
 |---|----------------|-----|-----|-----|-----|-------------------|
 |R/W|`00000000000000`|LOOPE|LSBF |CPOL |CPHA | DVSR              |
+
+### GPIO Output Register 
+
+This register contains the values driven on the (optional) GP output port.  Only the least significant 'w' bits are used, where 'w' is the configured width of the port.
 
 
