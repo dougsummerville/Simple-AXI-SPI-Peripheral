@@ -149,6 +149,7 @@ architecture arch_imp of axi_spi_simple_v1_0_S00_AXI is
 	signal spidata_reg, spirxbuf_reg: std_logic_vector(7 downto 0);
 	signal sptef,sptef_ack: std_logic; --transmission complete and SPI tx buf empty
     signal sprf, sprf_ack, sprf_set: std_logic; --spi read buffer full
+    signal spi_busy: std_logic;
     signal baud_cntr: integer;
     TYPE SPI_STATE_TYPE IS (ST_IDLE, ST_SS_START, ST_BIT1, ST_BIT2, ST_SS_END, ST_RESTART );
     SIGNAL state   : SPI_STATE_TYPE;
@@ -424,6 +425,7 @@ begin
 	        reg_data_out <= (others => '0');
 	        reg_data_out(0) <= sptef;
 	        reg_data_out(1) <= sprf;
+	        reg_data_out(2) <= spi_busy;
 	        sprf_ack <= '1'; --read clears sprf
 	      when b"10" =>
 	        reg_data_out <= (others => '0');
@@ -520,10 +522,12 @@ begin
           ssn_sig<='0';
           spi_sample<='0';
           spi_shift <='0';
+          spi_busy<='1';
           --state logic
           case state is
            when ST_IDLE=> --SPI is IDLE
-            ssn_sig <= '1'; 
+            ssn_sig <= '1';
+            spi_busy<='0'; 
             if sptef = '0' then 
                 state <= ST_SS_START;
                 sptef_ack <= '1';
