@@ -77,6 +77,65 @@ Create a local copy of the directory tree axi_spi_simple_1.0/ to your local hard
 The following C code example demonstrates how one cn interface the IP core from software.  It does not access the I/O registers through the Xilinx API but accesses them directly using the known memory-mapped I/O address.  The code may need to be tailored for the specific development environment.  
 
 ...
+#include <stdint.h>
+#include <stdbool.h>
+
+struct SPI_IO_BLOCK {
+	uint32_t volatile DATA;
+	uint32_t volatile S;
+	uint32_t volatile C;
+	uint32_t volatile GPIO;
+};
+
+#define SPI_BASE_ADDR (0x44a10000)
+#define SPI0 (*(struct SPI_IO_BLOCK *)SPI_BASE_ADDR)
+
+//some macros to make code a bot more readable
+#define SPI_DATA_MASK (0x000000FFu)
+#define SPI_DATA(A) (((A)<<0))&SPI_DATA_MASK)
+
+#define SPI_S_SPTE_MASK (1u<<0)
+#define SPI_S_SPRF_MASK (1u<<1)
+#define SPI_S_BUSY_MASK (1u<<2)
+
+#define SPI_C_DVSR_MASK (0xFFFFu<<0)
+#define SPI_C_DVSR(A) (((A)<<0)&SPI_C_DVSR_MASK)
+#define SPI_C_CPHA_MASK (1u<<16)
+#define SPI_C_CPHA(A) (((A)<<16)&SPI_C_CPHA_MASK)
+#define SPI_C_CPOL_MASK (1u<<17)
+#define SPI_C_CPOL(A) (((A)<<17)&SPI_C_CPOL_MASK)
+#define SPI_C_LSBF_MASK (1u<<18)
+#define SPI_C_LSBF(A) (((A)<<18)&SPI_C_LSBF_MASK)
+#define SPI_C_LOOPE_MASK (1u << 19)
+#define SPI_C_LOOPE(A) (((A)<<19)&SPI_C_LOOPE_MASK)
+
+int main () 
+{
+   print("---Entering main---\n\r");
+   SPI0.C = SPI_C_DVSR(100) //500 KBd divisor for 100MHz AXI clock
+		   | SPI_C_CPOL(1) | SPI_C_CPHA(0) //SPI MODE 2
+		   | SPI_C_LOOPE(0) //no loopback
+		   | SPI_C_LSBF(0); //msb first
+   SPI0.GPIO=0x0000AAAA;
+
+   //send bytes 0x01 0xfa without deasserting SS between them
+   while( !(SPI0.S & SPI_S_SPTE_MASK)); //poll until SPTE=1
+   SPI0.DATA = 0x01;
+   while( !(SPI0.S & SPI_S_SPTE_MASK)); //poll until SPTE=1
+   SPI0.DATA = 0xfa;
+
+   //wait for prior transmissions to complete (SS will be deasserted)
+   while( SPI0.S & SPI_S_BUSY_MASK );
+
+   //Send 0xAA, wait for complete, and store received byte
+   SPI0.DATA=0xAA;
+   while( !(SPI0.S & SPRF) );
+   uint8_t temp=SPI0.DATA;
+
+   print("---Exiting main---\n\r");
+   return 0;
+}
+
 ...
 
 
