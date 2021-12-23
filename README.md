@@ -4,7 +4,8 @@ An AXI4 SPI master that can be instantiated within a Xilinx Vivado design to int
 ## Motivation
 The SPI peripheral included in the Vivado IP catalog is overly complex for simple designs.  This peripheral can be quickly instantiated and easily programmed from a hard- or soft-processor.  In addition, the optional GPIO port allows for custom output signals without instantiating a separate GPIO core.
 
-![image](https://user-images.githubusercontent.com/64434702/146989767-5650805e-7dca-49f0-bb0a-f7cd8e72a37a.png)
+![image](https://user-images.githubusercontent.com/64434702/147180028-79f12c9b-e6be-45d4-bca6-9f3cae0d7719.png)
+
 
 ## Build Status
 The core has not been exhaustively tested and no benchmarking was performed.  The various features and modes were verified using both an oscilloscope and SPI protocol anayzer. The module was tested on a Digilent Basys3 FPGA development board.
