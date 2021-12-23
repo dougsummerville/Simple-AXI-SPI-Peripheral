@@ -12,7 +12,8 @@ The core has not been exhaustively tested and no benchmarking was performed.  Th
 ## Instantiating the Core
 The core can be instantiated and used like any other Xililx AXI4 IP.  Using the Xilinx "Customize IP" GUI, active-low SS (default) can be selected, or unchecked for an active high signal.  "Use GPIO" controls whether the optional general-purpose output port is instantiated; if selected, the "GPIO Width" parameter selects the width of the port from 1 to 32. 
 
-![image](https://user-images.githubusercontent.com/64434702/146989392-0e6dac22-6615-4c7d-a180-af2f8fb69ffc.png)
+![image](https://user-images.githubusercontent.com/64434702/147180181-7e51c366-ed5a-4e8c-90fb-163041f1523f.png)
+
 
 ## Interfacing the Peripheral from Software
 
