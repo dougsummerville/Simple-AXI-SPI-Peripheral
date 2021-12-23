@@ -24,7 +24,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity axi_spi_simple_v1_0 is
+entity axi_spi_simple is
 	generic (
 		-- Users to add parameters here
         ACTIVE_LOW_SS : boolean := true;
@@ -74,12 +74,12 @@ entity axi_spi_simple_v1_0 is
 		s00_axi_rvalid	: out std_logic;
 		s00_axi_rready	: in std_logic
 	);
-end axi_spi_simple_v1_0;
+end axi_spi_simple;
 
-architecture arch_imp of axi_spi_simple_v1_0 is
-
+architecture arch_imp of axi_spi_simple is
+ 
 	-- component declaration
-	component axi_spi_simple_v1_0_S00_AXI is
+	component axi_spi_simple_S00_AXI is
 		generic (
 		GPIO_WIDTH: integer := 32;
         USE_GPIO: boolean:= false;
@@ -117,12 +117,12 @@ architecture arch_imp of axi_spi_simple_v1_0 is
 		S_AXI_RVALID	: out std_logic;
 		S_AXI_RREADY	: in std_logic
 		);
-	end component axi_spi_simple_v1_0_S00_AXI;
+	end component axi_spi_simple_S00_AXI;
 
 begin
 
 -- Instantiation of Axi Bus Interface S00_AXI
-axi_spi_simple_v1_0_S00_AXI_inst : axi_spi_simple_v1_0_S00_AXI
+axi_spi_simple_S00_AXI_inst : axi_spi_simple_S00_AXI
 	generic map (
 	    GPIO_WIDTH => GPIO_WIDTH,
         USE_GPIO => USE_GPIO,

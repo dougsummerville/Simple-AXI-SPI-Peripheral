@@ -1,37 +1,14 @@
--- MIT License
---
---Copyright (c) 2021 Douglas H. Summerville, Department of Electical and Computer Engineering, Binghamton University
---
---Permission is hereby granted, free of charge, to any person obtaining a copy
---of this software and associated documentation files (the "Software"), to deal
---in the Software without restriction, including without limitation the rights
---to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
---copies of the Software, and to permit persons to whom the Software is
---furnished to do so, subject to the following conditions:
-
---The above copyright notice and this permission notice shall be included in all
---copies or substantial portions of the Software.
-
---THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
---IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
---FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
---AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
---LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
---OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
---SOFTWARE.
-
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity axi_spi_simple_S00_AXI is
+entity basys3_sseg_driver_v1_0_S00_AXI is
 	generic (
 		-- Users to add parameters here
- 	-- User parameters ends
+        PRESCALE: integer :=40000;
+		-- User parameters ends
 		-- Do not modify the parameters beyond this line
-        GPIO_WIDTH: integer := 32;
-        USE_GPIO: boolean:= false;
-        ACTIVE_LOW_SS: boolean:= true;
+
 		-- Width of S_AXI data bus
 		C_S_AXI_DATA_WIDTH	: integer	:= 32;
 		-- Width of S_AXI address bus
@@ -39,12 +16,10 @@ entity axi_spi_simple_S00_AXI is
 	);
 	port (
 		-- Users to add ports here
-        mosi: out std_logic;
-        miso: in std_logic;
-        sclk: out std_logic;
-        ss: out std_logic;
-        ssn: out std_logic;
-        gpo: out std_logic_vector(GPIO_WIDTH-1 downto 0);
+        dp: out std_logic;
+        seg: out std_logic_vector(6 downto 0);
+        an: out std_logic_vector(3 downto 0);
+
 		-- User ports ends
 		-- Do not modify the ports beyond this line
 
@@ -109,9 +84,9 @@ entity axi_spi_simple_S00_AXI is
     		-- accept the read data and response information.
 		S_AXI_RREADY	: in std_logic
 	);
-end axi_spi_simple_S00_AXI;
+end basys3_sseg_driver_v1_0_S00_AXI;
 
-architecture arch_imp of axi_spi_simple_S00_AXI is
+architecture arch_imp of basys3_sseg_driver_v1_0_S00_AXI is
 
 	-- AXI4LITE signals
 	signal axi_awaddr	: std_logic_vector(C_S_AXI_ADDR_WIDTH-1 downto 0);
@@ -145,31 +120,17 @@ architecture arch_imp of axi_spi_simple_S00_AXI is
 	signal reg_data_out	:std_logic_vector(C_S_AXI_DATA_WIDTH-1 downto 0);
 	signal byte_index	: integer;
 	signal aw_en	: std_logic;
-	--SPI SIGNALS
-	signal spidata_reg, spirxbuf_reg: std_logic_vector(7 downto 0);
-	signal sptef,sptef_ack: std_logic; --transmission complete and SPI tx buf empty
-    signal sprf, sprf_ack, sprf_set: std_logic; --spi read buffer full
-    signal spi_busy: std_logic;
-    signal baud_cntr: integer;
-    TYPE SPI_STATE_TYPE IS (ST_IDLE, ST_SS_START, ST_BIT1, ST_BIT2, ST_SS_END, ST_RESTART );
-    SIGNAL state   : SPI_STATE_TYPE;
-    signal bit_cntr : integer;
-    alias CPOL : std_logic is slv_reg2(17);
-    alias CPHA : std_logic is slv_reg2(16);
-    alias LOOPBACK : std_logic is slv_reg2(18);
-    alias LSBF: std_logic is slv_reg2(19);
-    alias BAUD_DVSR: std_logic_vector(15 downto 0) is slv_reg2(15 downto 0);
-    signal miso_sync: std_logic_vector(2 downto 0);
-    signal ssn_sig: std_logic;
-    signal data_in: std_logic;
-    signal baud_clk: std_logic;
-    signal spi_sample, spi_shift,spi_data: std_logic;
+
+    signal dp_sig: std_logic ;
+    signal seg_sig: std_logic_vector(6 downto 0);
+    signal an_sig: std_logic_vector(3 downto 0);
+    signal cntr: integer;
+
 begin
 	-- I/O Connections assignments
-    data_in <= miso_sync(0) when LOOPBACK = '0' else spidata_reg(7);
-    gpo <= slv_reg3(GPIO_WIDTH-1 downto 0) when USE_GPIO = true else (others => '0');
-	ss <= not ssn_sig when ACTIVE_LOW_SS = false else '0';
-	ssn <= ssn_sig when ACTIVE_LOW_SS = true else '1';
+    dp <= dp_sig;
+    seg <= seg_sig;
+    an <= an_sig;
 	S_AXI_AWREADY	<= axi_awready;
 	S_AXI_WREADY	<= axi_wready;
 	S_AXI_BRESP	<= axi_bresp;
@@ -271,51 +232,38 @@ begin
 	      loc_addr := axi_awaddr(ADDR_LSB + OPT_MEM_ADDR_BITS downto ADDR_LSB);
 	      if (slv_reg_wren = '1') then
 	        case loc_addr is
-	        --slv_reg 0 write is TX data; bit 8 is 
-	          when b"00" => --slv_reg0 write is TX data and 
-	              if ( S_AXI_WSTRB(0) = '1' ) then
-	                slv_reg0(7 downto 0) <= S_AXI_WDATA(7 downto 0);
-	                sptef <='0';
+	          when b"00" =>
+	            for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
+	              if ( S_AXI_WSTRB(byte_index) = '1' ) then
+	                -- Respective byte enables are asserted as per write strobes                   
+	                -- slave registor 0
+	                slv_reg0(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
 	              end if;
-	              if ( S_AXI_WSTRB(1) = '1' ) then
-	                slv_reg0(15 downto 8) <= (others => '0');
+	            end loop;
+	          when b"01" =>
+	            for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
+	              if ( S_AXI_WSTRB(byte_index) = '1' ) then
+	                -- Respective byte enables are asserted as per write strobes                   
+	                -- slave registor 1
+	                slv_reg1(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
 	              end if;
-	              if ( S_AXI_WSTRB(2) = '1' ) then
-	                slv_reg0(23 downto 16) <= (others => '0');
-	             end if;
-                 if ( S_AXI_WSTRB(3) = '1' ) then
-	                slv_reg0(31 downto 24) <= (others => '0');
-                 end if;
-	          when b"01" => --read only status register
-	            slv_reg1 <= (others => '0');
+	            end loop;
 	          when b"10" =>
-	              if ( S_AXI_WSTRB(0) = '1' ) then
-	                slv_reg2(7 downto 0) <= S_AXI_WDATA(7 downto 0);
+	            for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
+	              if ( S_AXI_WSTRB(byte_index) = '1' ) then
+	                -- Respective byte enables are asserted as per write strobes                   
+	                -- slave registor 2
+	                slv_reg2(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
 	              end if;
-	              if ( S_AXI_WSTRB(1) = '1' ) then
-	                slv_reg2(15 downto 8) <= S_AXI_WDATA(15 downto 8);
-	              end if;
-	              if ( S_AXI_WSTRB(2) = '1' ) then
-	                slv_reg2(23 downto 16) <= (others => '0');
-                    slv_reg2(19 downto 16) <= S_AXI_WDATA(19 downto 16);
-	             end if;
-                 if ( S_AXI_WSTRB(3) = '1' ) then
-	                slv_reg3(31 downto 24) <= (others => '0');
-                 end if;
-
-	          when b"11" => --16 bit baud divisor register
-	            if USE_GPIO then
-	              for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
-	              if ( S_AXI_WSTRB(byte_index) = '1' AND byte_index * 8 < GPIO_WIDTH) then
+	            end loop;
+	          when b"11" =>
+	            for byte_index in 0 to (C_S_AXI_DATA_WIDTH/8-1) loop
+	              if ( S_AXI_WSTRB(byte_index) = '1' ) then
 	                -- Respective byte enables are asserted as per write strobes                   
 	                -- slave registor 3
 	                slv_reg3(byte_index*8+7 downto byte_index*8) <= S_AXI_WDATA(byte_index*8+7 downto byte_index*8);
 	              end if;
 	            end loop;
-
-	            else
-	              slv_reg3 <= (others => '0');
-	            end if;
 	          when others =>
 	            slv_reg0 <= slv_reg0;
 	            slv_reg1 <= slv_reg1;
@@ -323,9 +271,6 @@ begin
 	            slv_reg3 <= slv_reg3;
 	        end case;
 	      end if;
-	    end if;
-	    if sptef_ack = '1' then
-	      sptef <= '1';
 	    end if;
 	  end if;                   
 	end process; 
@@ -411,25 +356,18 @@ begin
 	-- and the slave is ready to accept the read address.
 	slv_reg_rden <= axi_arready and S_AXI_ARVALID and (not axi_rvalid) ;
 
-	process (slv_reg0, slv_reg1, slv_reg2, slv_reg3, axi_araddr, S_AXI_ARESETN, slv_reg_rden,sptef,sprf,spirxbuf_reg)
+	process (slv_reg0, slv_reg1, slv_reg2, slv_reg3, axi_araddr, S_AXI_ARESETN, slv_reg_rden)
 	variable loc_addr :std_logic_vector(OPT_MEM_ADDR_BITS downto 0);
 	begin
 	    -- Address decoding for reading registers
-	    sprf_ack <= '0';
 	    loc_addr := axi_araddr(ADDR_LSB + OPT_MEM_ADDR_BITS downto ADDR_LSB);
 	    case loc_addr is
 	      when b"00" =>
-	        reg_data_out <= (others => '0');
-	        reg_data_out(7 downto 0) <= spirxbuf_reg;
+	        reg_data_out <= slv_reg0;
 	      when b"01" =>
-	        reg_data_out <= (others => '0');
-	        reg_data_out(0) <= sptef;
-	        reg_data_out(1) <= sprf;
-	        reg_data_out(2) <= spi_busy;
-	        sprf_ack <= '1'; --read clears sprf
+	        reg_data_out <= slv_reg1;
 	      when b"10" =>
-	        reg_data_out <= (others => '0');
-	        reg_data_out(19 downto 0) <= slv_reg2(19 downto 0);
+	        reg_data_out <= slv_reg2;
 	      when b"11" =>
 	        reg_data_out <= slv_reg3;
 	      when others =>
@@ -443,7 +381,6 @@ begin
 	  if (rising_edge (S_AXI_ACLK)) then
 	    if ( S_AXI_ARESETN = '0' ) then
 	      axi_rdata  <= (others => '0');
-	      sprf <= '0';
 	    else
 	      if (slv_reg_rden = '1') then
 	        -- When there is a valid read address (S_AXI_ARVALID) with 
@@ -451,142 +388,40 @@ begin
 	        -- output the read dada 
 	        -- Read address mux
 	          axi_rdata <= reg_data_out;     -- register read data
-	          if sprf_ack = '1' then
-	             sprf <= '0';
-	          end if;  	   
 	      end if;   
-	      if sprf_set = '1' then
-	          sprf <= '1';
-	      end if;
 	    end if;
 	  end if;
 	end process;
-
-
 
 
 	-- Add user logic here
-	--spi data register
-    mosi <= spidata_reg(7) when LSBF='0' else spidata_reg(0);
-	process( S_AXI_ACLK ) is
-	  variable spi_control: std_logic_vector(1 downto 0);
+process( S_AXI_ACLK ) is
 	begin
 	  if (rising_edge (S_AXI_ACLK)) then
 	    if ( S_AXI_ARESETN = '0' ) then
-	      spidata_reg  <= (others => '0');
-	      spi_data <= '0';
+	      an_sig <= "1110";
+	      cntr <= 0;
+	    elsif (cntr = PRESCALE-1) then
+	       an_sig <= an_sig(2 downto 0) & an_sig(3);
+	       cntr <= 0;
 	    else
-	      if spi_sample = '1' then 
-	        spi_data <= data_in; --sampled data on miso
-	      end if;
-	      spi_control := spi_shift & sptef_ack; 
-          case spi_control is
-            when "10" => 
-              if LSBF = '0' then
-                spidata_reg <= spidata_reg(6 downto 0) & spi_data;
-              else
-                spidata_reg <= spi_data & spidata_reg(7 downto 1);
-              end if;
-            when "01" => null;
-              spidata_reg <= slv_reg0(7 downto 0);
-            when others=> null;
-          end case;
+	       cntr <= cntr +1;
 	    end if;
 	  end if;
 	end process;
+	dp_sig <= 
+	  slv_reg0(7)  when an_sig = "1110" else
+	  slv_reg0(15) when an_sig = "1101" else
+	  slv_reg0(23) when an_sig = "1011" else
+	  slv_reg0(31) when an_sig = "0111" else
+	  '1';
+    seg_sig <=
+      slv_reg0(6 downto 0) when an_sig = "1110" else
+      slv_reg0(14 downto 8) when an_sig = "1101" else
+      slv_reg0(22 downto 16) when an_sig = "1011" else
+      slv_reg0(30 downto 24) when an_sig = "0111" else
+      "1111111";
 
-
-	-- Output register or memory read data
-	baud_clk <= '1' when baud_cntr = 0 else '0';
-	process( S_AXI_ACLK ) is
-	begin
-	  if (rising_edge (S_AXI_ACLK)) then
-	  --miso sync
-	    miso_sync <= miso & miso_sync(2 downto 1);
-	    if ( S_AXI_ARESETN = '0' ) then
-          state <= ST_IDLE;
-	    else
-	      --baud clock endbler
-	      if state = ST_IDLE OR baud_cntr = 0 then --don't count while idle
-	        baud_cntr <=   to_integer(unsigned(BAUD_DVSR));
-          else
-            baud_cntr <= baud_cntr - 1;
-          end if; 
-        -----------------------------------------------------
-        --state machine
-        -----------------------------------------------------
-          --defaults
-          sptef_ack <= '0';
-          sclk <= CPOL;
-          sprf_set <= '0';
-          ssn_sig<='0';
-          spi_sample<='0';
-          spi_shift <='0';
-          spi_busy<='1';
-          --state logic
-          case state is
-           when ST_IDLE=> --SPI is IDLE
-            ssn_sig <= '1';
-            spi_busy<='0'; 
-            if sptef = '0' then 
-                state <= ST_SS_START;
-                sptef_ack <= '1';
-            end if;
-           when ST_SS_START=> --SS aserted; CPHA=0 SETUP
-            if baud_clk='1' then 
-              state <= ST_BIT1;
-              bit_cntr <= 0;
-              if CPHA = '0' then
-                spi_sample <= '1';
-              end if;
-            end if;
-           when ST_BIT1=> --CPHA=0 HOLD, CPHA1=SETUP
-            sclk <= not CPOL; 
-            if baud_clk='1' then 
-              state <= ST_BIT2;
-              if CPHA = '0' then
-                spi_shift <= '1';
-              else
-                spi_sample <= '1';
-              end if;
-            end if;
-            when ST_BIT2=>  --CPHA=0 SETUP, CPHA1=HOLD
-             sclk <= CPOL; 
-             if baud_clk='1' then
-               if CPHA = '1' then
-                 spi_shift <= '1';
-               else
-                 spi_sample <= '1';
-               end if; 
-               if bit_cntr = 7 then
-                 state <= ST_SS_END;
-               else
-                 bit_cntr <= bit_cntr + 1;
-                 state <= ST_BIT1;
-               end if;
-              end if;
-             when ST_SS_END=> --CPHA=1 HOLD
-              if baud_clk='1' then
-                if CPHA = '1' then
-                   spi_shift <= '1';
-                end if;
-                state <= ST_RESTART;
-              end if;
-             when ST_RESTART=> --ALLOW SS to remain low between xfers; bypass idle state if SPTEF
-                 sprf_set <= '1';
-                 spirxbuf_reg <= spidata_reg;
-                if sptef = '0' then 
-                    state <= ST_SS_START;
-                    sptef_ack <= '1';
-                else
-                    state <= ST_IDLE;
-                end if;
-              when others=> --should not happen but allows reset
-                state <= ST_IDLE;              
-          end case;
-	    end if;
-	  end if;
-	end process;
 	-- User logic ends
 
 end arch_imp;

@@ -24,7 +24,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity axi_spi_simple_v1_0_S00_AXI is
+entity axi_spi_simple_S00_AXI is
 	generic (
 		-- Users to add parameters here
  	-- User parameters ends
@@ -109,9 +109,9 @@ entity axi_spi_simple_v1_0_S00_AXI is
     		-- accept the read data and response information.
 		S_AXI_RREADY	: in std_logic
 	);
-end axi_spi_simple_v1_0_S00_AXI;
+end axi_spi_simple_S00_AXI;
 
-architecture arch_imp of axi_spi_simple_v1_0_S00_AXI is
+architecture arch_imp of axi_spi_simple_S00_AXI is
 
 	-- AXI4LITE signals
 	signal axi_awaddr	: std_logic_vector(C_S_AXI_ADDR_WIDTH-1 downto 0);
@@ -267,6 +267,7 @@ begin
 	      slv_reg1 <= (others => '0');
 	      slv_reg2 <= (others => '0');
 	      slv_reg3 <= (others => '0');
+	      sptef <='1';
 	    else
 	      loc_addr := axi_awaddr(ADDR_LSB + OPT_MEM_ADDR_BITS downto ADDR_LSB);
 	      if (slv_reg_wren = '1') then
