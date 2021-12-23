@@ -37,10 +37,10 @@ The data register is the buffer for the double-buffered receive and transmit. Re
 The read-only status register contains two flags: SPTEF and SPRE.  Writes have no effect.
 
 SPTE
-: SPI Transmit buffer Empty (STBE) flag is 1 whenever the TX buffer is available to be written.  When the SPI is idle, two consecutive writes to the DATA register can be made before STBE goes low (due to double-buffering).  Before transmitting, SPTEF should be polled to indicate the byte can be sent.
+: SPI Transmit buffer Empty (STBE) flag is 1 whenever the TX buffer is available to be written.  When the SPI is idle, two consecutive writes to the DATA register can be made before STBE goes low (due to double-buffering).  Before transmitting, SPTEF can be polled to determine if the SPI cn accept they byte.
 
 SPRF
-: SPI Receive Buffer Full (SRBF) flag becomes 1 whenever a new value from the slave is ready to be read from the DATA register.  A read of the S register followed by a read of the DATA register clears SRBF.  There is no protection against overrun.
+: SPI Receive Buffer Full (SRBF) flag becomes 1 whenever a new value from the slave is ready to be read from the DATA register.  A read of the S register clears SRBF.  There is no protection against overrun.
 
 BUSY
 : SPI busy flag.  When 0, the SPI module has completed all previous transmissions and is idle.  When 1, a serial transmission is in progress.
@@ -52,21 +52,22 @@ BUSY
 ### SPI Configuration Register (C)
 The C register configures the SPI communication settings.  
 
-DVSR
-: Baud Clock Divisor.  The frequency of serial transmission is half the AXI clock frequency, Fa/2, divided by DVSR. For example, if the AXI bus is running at 100 MHz and DVSR is set to 200, the serial transmission rate will be ( 100MHz /2 /200 ) = 256 KHz
-
-CPOL,CPHA
-: Standard Motorola mode setting.  For example, to configure SPI mode 2 set CPOL=1 and CPHA=0;
-
 LSBF
 : Least significant bit first enable.  When 1, bytes are transmitted lsb-first; otherwise, msb-first but ordering is used.
 
 LOOPE
 : Enable loopback mode.  For testing.  MISO input is bypassed and the MOSI output is fed back into the RX input.
 
+CPOL,CPHA
+: Standard Motorola mode setting.  For example, to configure SPI mode 2 set CPOL=1 and CPHA=0;
+
+DVSR
+: Baud Clock Divisor.  The frequency of serial transmission is half the AXI clock frequency, Fa/2, divided by DVSR. For example, if the AXI bus is running at 100 MHz and DVSR is set to 200, the serial transmission rate will be ( 100MHz /2 /200 ) = 256 KHz
+
+
 |   |`31..........20`|`19` |`18` |`17` |`16` |`15..............0`|
 |---|----------------|-----|-----|-----|-----|-------------------|
-|R/W|`00000000000000`|LOOPE|LSBF |CPOL |CPHA | DVSR              |
+|R/W|`00000000000000`|LSBF |LOOPE|CPOL |CPHA | DVSR              |
 
 ### GPIO Output Register 
 
