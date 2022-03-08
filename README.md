@@ -1,5 +1,5 @@
 # Simple-AXI-SPI-Peripheral
-An AXI4 SPI manager that can be instantiated within a Xilinx Vivado design to interface SPI slave(s).  The SPI interface uses standard MOSI, MISO, SCLK, and either an active-low or active-high SS.  A single general-purpose output port with a width of up to 32 bits can be optionally enabled to use, for example, as slave select or additional control lines.  The SPI module has run-time configurable baud rate, bit ordering, and SPI mode (CPOL:CPHA) selection and includes a loopback feature for testing.  Double-buffered RX and TX data registers allow back-to-back transfers without de-asserting SS.  
+An AXI4 SPI manager that can be instantiated within a Xilinx Vivado design to interface SPI subordinates(s).  The SPI interface uses standard MOSI, MISO, SCLK, and either an active-low or active-high SS.  A single general-purpose output port with a width of up to 32 bits can be optionally enabled to use, for example, as subordinate select or additional control lines.  The SPI module has run-time configurable baud rate, bit ordering, and SPI mode (CPOL:CPHA) selection and includes a loopback feature for testing.  Double-buffered RX and TX data registers allow back-to-back transfers without de-asserting SS.  
 
 ## Motivation
 The SPI peripheral included in the Vivado IP catalog is overly complex for simple designs.  This peripheral can be quickly instantiated and easily programmed from a hard- or soft-processor.  In addition, the optional GPIO port allows for custom output signals without instantiating a separate GPIO core.
@@ -26,7 +26,7 @@ The peripheral contains four 32b registers using the first four offsets from the
 |base + 0xC |GPIO    | GPIO Output Data      |
 
 ### DATA Register 
-The data register is the buffer for the double-buffered receive and transmit. Reads from the data register will return the most recent received data from the slave in DATA[7:0]; DATA[31:8] will always read 0.  Writes to DATA[7:0] will buffer the next octet to be transmitted when the SPI link becomes available.  The SPI status register has flags to indicate when the RX buffer is not empty and the TX buffer is empty.
+The data register is the buffer for the double-buffered receive and transmit. Reads from the data register will return the most recent received data from the subordinate in DATA[7:0]; DATA[31:8] will always read 0.  Writes to DATA[7:0] will buffer the next octet to be transmitted when the SPI link becomes available.  The SPI status register has flags to indicate when the RX buffer is not empty and the TX buffer is empty.
 
 | |`31.............................8`|`7......0`|
 |-|----------------------------------|----------|
